@@ -12,9 +12,10 @@ namespace GZipTest
         protected byte[][] InputArray { get; set; }
         protected byte[][] OutputArray { get; set; }
 
-        protected virtual int BlockSize { get; set; } = 1048576;
+        protected virtual int DefaultBlockSize { get; set; } = 1048576;
 
         public abstract int Compute(string inputFileName, string outputFileName);
+
         protected abstract void ProcessBlock(object index);
     }
 }

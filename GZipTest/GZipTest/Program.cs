@@ -13,57 +13,68 @@ namespace GZipTest
         {
             try
             {
-                bool lifeTime = true;
-                while (lifeTime)
+                int result = 1;
+
+                if (IsArgumentsValid(args))
                 {
-                    Console.Write("Enter mode: ");
-                    var mode = Console.ReadLine().ToLower();
-
-                    Console.Write("Enter input file: ");
-                    var inputFileName = Console.ReadLine();
-
-                    Console.Write("Enter output file: ");
-                    var outputFileName = Console.ReadLine();
-
-                    if (!File.Exists(inputFileName))
-                        throw new Exception("Не найден входной файл");
-
-                    if (mode == "c" && File.Exists(outputFileName))
-                        File.Delete(outputFileName);
-
-                    int result;
-                    switch (mode)
+                    switch (args[0])
                     {
-                        case "c":
+                        case "compress":
                             var compressor = new Compressor();
-                            result = compressor.Compute(inputFileName, outputFileName);
+                            result = compressor.Compute(args[1], args[2]);
                             break;
 
-                        case "d":
+                        case "decompress":
                             var decompressor = new Decompressor();
-                            result = decompressor.Compute(inputFileName, outputFileName);
+                            result = decompressor.Compute(args[1], args[2]);
                             break;
 
                         default:
-                            throw new Exception("Нераспознан режим работы. Выберете с - compress или d - decompress");
+                            throw new Exception("Нераспознан режим работы. Выберете compress или decompress");
                     }
-
-                    Console.WriteLine("result = {0}", result);
-
-                    if (Console.ReadLine() == "exit")
-                        lifeTime = false;
                 }
 
+                Console.WriteLine(result);
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                Console.WriteLine(-1);
             }
-            
-
-            Console.ReadKey();
         }
 
-        
+        private static bool IsArgumentsValid(string[] args)
+        {
+            if (args.Length != 3)
+            {
+                Console.Error.WriteLine("Неверное количество аргументов1");
+                return false;
+            }
+
+            string mode = args[0].ToLower();
+            if (string.IsNullOrEmpty(mode) || (mode != "compress" && mode != "decompress"))
+            {
+                Console.Error.WriteLine("Неверно указан режим. Используйте ключевые слова compress/decompress");
+                return false;
+            }
+
+            if (!File.Exists(args[1]))
+            {
+                Console.WriteLine("Указанный входной файл не существует");
+                return false;
+            }
+
+            var fileName = Path.GetFileName(args[2]);
+            string dir = args[2].Replace(fileName, string.Empty);
+            if (!Directory.Exists(dir))
+            {
+                Console.WriteLine("Директория для выходного файла не существует");
+                return false;
+            }
+
+            return true;
+        }
+
+
     }
 }

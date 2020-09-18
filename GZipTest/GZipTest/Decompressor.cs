@@ -11,7 +11,8 @@ namespace GZipTest
 {
     public class Decompressor : GZipCDBase
     {
-        protected override int BlockSize { get; set; }
+        protected override int DefaultBlockSize { get; set; }
+
 
         public Decompressor()
         {
@@ -23,62 +24,55 @@ namespace GZipTest
         public override int Compute(string inputFileName, string outputFileName)
         {
             try
-            {
-                int _dataPortionSize;
-                //int compressedBlockLength;
-                Thread[] threads;
-                Console.Write("Decompressing...");
-                byte[] buffer = new byte[8];
-
-                var timer = new Stopwatch();
-                timer.Start();
+            {     
+                Console.Write("Please wait...");
 
                 using (var inputStream = new FileStream(inputFileName, FileMode.Open))
                 {
                     using (var outputStream = new FileStream(outputFileName, FileMode.Append))
                     {
+                        Thread[] threads;
+
                         while (inputStream.Position < inputStream.Length)
                         {
-                            Console.Write(".");
                             threads = new Thread[ThreadsNumber];
-                            for (int portionCount = 0;
-                                 (portionCount < ThreadsNumber) && (inputStream.Position < inputStream.Length);
-                                 portionCount++)
+
+                            int threadIndex;
+                            for (threadIndex = 0; (threadIndex < ThreadsNumber) && (inputStream.Position < inputStream.Length); threadIndex++)
                             {
-                                inputStream.Read(buffer, 0, 8);
-                                BlockSize = BitConverter.ToInt32(buffer, 4) - 1;
-                                OutputArray[portionCount] = new byte[BlockSize + 1];
-                                buffer.CopyTo(OutputArray[portionCount], 0);
+                                //читаем первые 8 байт блока 
+                                byte[] blockHeader = new byte[8];
+                                inputStream.Read(blockHeader, 0, 8);
 
-                                inputStream.Read(OutputArray[portionCount], 8, BlockSize - 8);
-                                _dataPortionSize = BitConverter.ToInt32(OutputArray[portionCount], BlockSize - 4);
-                                InputArray[portionCount] = new byte[_dataPortionSize];
+                                //берем из последние 4 и получаем из них размер блока
+                                DefaultBlockSize = BitConverter.ToInt32(blockHeader, 4) - 1;
+                                OutputArray[threadIndex] = new byte[DefaultBlockSize + 1];
+                                blockHeader.CopyTo(OutputArray[threadIndex], 0);
 
-                                threads[portionCount] = new Thread(ProcessBlock);
-                                threads[portionCount].Start(portionCount);
+                                inputStream.Read(OutputArray[threadIndex], 8, DefaultBlockSize - 8);
+                                int decompressedBlockSize = BitConverter.ToInt32(OutputArray[threadIndex], DefaultBlockSize - 4);
+                                InputArray[threadIndex] = new byte[decompressedBlockSize];
+
+                                threads[threadIndex] = new Thread(ProcessBlock);
+                                threads[threadIndex].Start(threadIndex);
                             }
 
-                            for (int portionCount = 0; (portionCount < ThreadsNumber) && (threads[portionCount] != null);)
+                            for (int i = 0; i < threadIndex; i++)
                             {
-                                if (threads[portionCount].ThreadState == System.Threading.ThreadState.Stopped)
-                                {
-                                    outputStream.Write(InputArray[portionCount], 0, InputArray[portionCount].Length);
-                                    portionCount++;
-                                }
+                                threads[i].Join();
+                                outputStream.Write(InputArray[i], 0, InputArray[i].Length);
                             }
                         }
                     }
                 }
                 
-
-                timer.Stop();
-                Console.WriteLine("Elapsed time: {0} ms", timer.ElapsedMilliseconds);
+                Console.WriteLine("Done!");
 
                 return 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ERROR:" + ex.Message);
+                Console.WriteLine("Error:" + ex.Message);
                 return 1;
             }
         }

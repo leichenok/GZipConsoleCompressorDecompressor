@@ -1,0 +1,7 @@
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\bin\Debug\GZipTest.exe
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\bin\Debug\GZipTest.pdb
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\obj\Debug\GZipTest.csprojAssemblyReference.cache
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\obj\Debug\GZipTest.csproj.CoreCompileInputs.cache
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\obj\Debug\GZipTest.exe
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\obj\Debug\GZipTest.pdb
+D:\Coding\GZip\GZipConsoleCompressorDecompressor\GZipTest\GZipTest\bin\Debug\GZipTest.exe.config

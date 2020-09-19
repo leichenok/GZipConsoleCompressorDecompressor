@@ -1,2 +1,3 @@
 # GZipConsoleCompressorDecompressor
  
+Забыл добавить .gitignore :(

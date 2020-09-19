@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Threading;
@@ -10,8 +9,7 @@ namespace GZipTest
     {
         public Compressor()
         {
-            InputArray = new byte[ThreadsNumber][];
-            OutputArray = new byte[ThreadsNumber][];
+            BlockSize = 1048576; //1MB
         }
 
 
@@ -19,30 +17,21 @@ namespace GZipTest
         {
             try
             {
-                Console.WriteLine("Wait please...");
-
-                using (var inFile = new FileStream(inputFileName, FileMode.Open))
+                using (var inputStream = new FileStream(inputFileName, FileMode.Open))
                 {
-                    using (var outFile = new FileStream(outputFileName + ".gz", FileMode.Append))
+                    using (var outputStream = new FileStream(outputFileName, FileMode.Create))
                     {
                         Thread[] threads;
 
-                        while (inFile.Position < inFile.Length)
+                        while (inputStream.Position < inputStream.Length)
                         {
                             threads = new Thread[ThreadsNumber];
 
                             int threadIndex;
-                            for (threadIndex = 0; (threadIndex < ThreadsNumber) && (inFile.Position < inFile.Length); threadIndex++)
+                            for (threadIndex = 0; (threadIndex < ThreadsNumber) && (inputStream.Position < inputStream.Length); threadIndex++)
                             {
-                                //если в конце остался блок != BlockSize
-                                if (inFile.Length - inFile.Position <= DefaultBlockSize)
-                                    DefaultBlockSize = (int)(inFile.Length - inFile.Position);
+                                ReadBlockFromInputFile(inputStream, threadIndex);
 
-                                //читаем блок из файла в InputArray
-                                InputArray[threadIndex] = new byte[DefaultBlockSize];
-                                inFile.Read(InputArray[threadIndex], 0, DefaultBlockSize);
-
-                                //стартуем процесс для сжатия блока
                                 threads[threadIndex] = new Thread(ProcessBlock);
                                 threads[threadIndex].Start(threadIndex);
                             }
@@ -51,22 +40,13 @@ namespace GZipTest
                             for (int i = 0; i < threadIndex; i++)
                             {
                                 threads[i].Join();
-                            
-                                //потоки пишем по очереди 1, 2, 3 и 4. Ждем пока нужный поток не закончит.
-                                //если поток threads[index] завершился, то пишем в файл
-                                //получаем размер блока в байтах и пишем его сразу после GZip Magic numbers и Compression method в свободную область со сдвигом в 4 
-                                var bytes = BitConverter.GetBytes(OutputArray[i].Length + 1);
-                                bytes.CopyTo(OutputArray[i], 4);
 
-                                //записываем массив в файл в порядке чтения
-                                outFile.Write(OutputArray[i], 0, OutputArray[i].Length);
+                                WriteBlockToOutputFile(outputStream, i);
                             }
 
                         }
                     }
                 }
-
-                Console.WriteLine("Done!");
 
                 return 0;
             }
@@ -77,6 +57,22 @@ namespace GZipTest
             }
         }
 
+        protected override void WriteBlockToOutputFile(FileStream outputStream, int threadIndex)
+        {
+            //пишем размер блока сразу после GZip Magic numbers и Compression method
+            var blockSizeInBytes = BitConverter.GetBytes(OutputArray[threadIndex].Length + 1);
+            blockSizeInBytes.CopyTo(OutputArray[threadIndex], 4);
+
+            outputStream.Write(OutputArray[threadIndex], 0, OutputArray[threadIndex].Length);
+        }
+        protected override void ReadBlockFromInputFile(FileStream inputStream, int threadIndex)
+        {
+            if (inputStream.Length - inputStream.Position <= BlockSize)
+                BlockSize = (int)(inputStream.Length - inputStream.Position);
+
+            InputArray[threadIndex] = new byte[BlockSize];
+            inputStream.Read(InputArray[threadIndex], 0, BlockSize);
+        }
         protected override void ProcessBlock(object index)
         {
             using (MemoryStream output = new MemoryStream(InputArray[(int)index].Length))

@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
 
 namespace GZipTest
 {
@@ -17,6 +13,9 @@ namespace GZipTest
 
                 if (IsArgumentsValid(args))
                 {
+                    if (File.Exists(args[2]))
+                        File.Delete(args[2]);
+
                     switch (args[0])
                     {
                         case "compress":
@@ -38,8 +37,8 @@ namespace GZipTest
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(-1);
+                WriteError (ex.Message);
+                Console.WriteLine(1);
             }
         }
 
@@ -47,20 +46,26 @@ namespace GZipTest
         {
             if (args.Length != 3)
             {
-                Console.Error.WriteLine("Неверное количество аргументов1");
+                WriteError("Неверное количество аргументов");
                 return false;
             }
 
             string mode = args[0].ToLower();
             if (string.IsNullOrEmpty(mode) || (mode != "compress" && mode != "decompress"))
             {
-                Console.Error.WriteLine("Неверно указан режим. Используйте ключевые слова compress/decompress");
+                WriteError("Неверно указан режим. Используйте ключевые слова compress/decompress");
+                return false;
+            }
+
+            if (args[1] == args[2])
+            {
+                WriteError("Входной и выходной файлы не могут содержать одинаковые имена");
                 return false;
             }
 
             if (!File.Exists(args[1]))
             {
-                Console.WriteLine("Указанный входной файл не существует");
+                WriteError("Указанный исходный файл не существует");
                 return false;
             }
 
@@ -68,13 +73,15 @@ namespace GZipTest
             string dir = args[2].Replace(fileName, string.Empty);
             if (!Directory.Exists(dir))
             {
-                Console.WriteLine("Директория для выходного файла не существует");
+                WriteError("Неверный путь для выходного файла");
                 return false;
             }
 
             return true;
         }
-
-
+        private static void WriteError(string message)
+        {
+            Console.WriteLine($"Error: {message}");
+        }
     }
 }
